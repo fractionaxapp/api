@@ -1,0 +1,30 @@
+{
+  "name": "@fractionax/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "FractionAX platform/business API (Fastify).",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc --build",
+    "start": "node dist/server.js",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fractionax/core": "workspace:*",
+    "fastify": "^5.3.3",
+    "zod": "^3.25.46"
+  },
+  "devDependencies": {
+    "@fractionax/config": "workspace:*",
+    "@fractionax/tsconfig": "workspace:*",
+    "@types/node": "^22.15.29",
+    "eslint": "^9.28.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
+  }
+}
