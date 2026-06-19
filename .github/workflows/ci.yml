@@ -14,10 +14,9 @@ concurrency:
 # triggering commit into the services/api submodule, and runs the api tasks via moon.
 #
 # Cross-repo access uses a GitHub App (installed on the fractionaxapp org with
-# Contents: read on the repos) that mints a short-lived token at run time. Configure
-# these ORGANISATION-level values so every submodule repo inherits them:
-#   - variable MONOREPO_APP_ID          → the App's ID
-#   - secret   MONOREPO_APP_PRIVATE_KEY  → the App's private key (.pem contents)
+# Contents: read) that mints a short-lived token at run time. The App ID is not
+# secret (it appears in logs and App settings) so it is inlined; only the private
+# key is an org-level secret: MONOREPO_APP_PRIVATE_KEY.
 jobs:
   ci:
     name: Build, lint, typecheck, test
@@ -27,7 +26,7 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@v2
         with:
-          app-id: ${{ vars.MONOREPO_APP_ID }}
+          app-id: "4090077"
           private-key: ${{ secrets.MONOREPO_APP_PRIVATE_KEY }}
           owner: fractionaxapp
           repositories: |
