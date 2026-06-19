@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# This service depends on the @fractionax/* workspace packages, so it cannot build
+# in isolation. CI reconstructs the fractionaxapp meta-monorepo, checks out the
+# triggering commit into the services/api submodule, and runs the api tasks via moon.
+#
+# Cross-repo access uses a GitHub App (installed on the fractionaxapp org with
+# Contents: read on the repos) that mints a short-lived token at run time. Configure
+# these ORGANISATION-level values so every submodule repo inherits them:
+#   - variable MONOREPO_APP_ID          → the App's ID
+#   - secret   MONOREPO_APP_PRIVATE_KEY  → the App's private key (.pem contents)
+jobs:
+  ci:
+    name: Build, lint, typecheck, test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mint a cross-repo token from the GitHub App
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.MONOREPO_APP_ID }}
+          private-key: ${{ secrets.MONOREPO_APP_PRIVATE_KEY }}
+          owner: fractionaxapp
+          repositories: |
+            fractionaxapp
+            api
+
+      - name: Check out meta-monorepo
+        uses: actions/checkout@v5
+        with:
+          repository: fractionaxapp/fractionaxapp
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Check out the triggering api commit
+        run: |
+          cd services/api
+          git fetch origin "${API_SHA}"
+          git checkout "${API_SHA}"
+        env:
+          API_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Install proto toolchains
+        uses: moonrepo/setup-toolchain@v0
+        with:
+          auto-install: true
+
+      - name: Install dependencies
+        # Not --frozen-lockfile: the meta-repo lockfile is pinned to its recorded api
+        # SHA, which may differ from the commit under test.
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build, lint, typecheck and test the api
+        run: moon run api:build api:lint api:typecheck api:test
